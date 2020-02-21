@@ -7,12 +7,12 @@ DSRC = src
 COMPILER = gnu
 ifeq "$(COMPILER)" "gnu"
   FC    = gfortran
-  OPTSC = -c -frealloc-lhs -std=f2008 -fall-intrinsics -O2 -D_R16P_SUPPORTED -J $(DMOD)
+  OPTSC = -c -frealloc-lhs -std=f2008 -fall-intrinsics -O2 -J $(DMOD)
   OPTSL = -O2 -J $(DMOD)
 endif
 ifeq "$(COMPILER)" "intel"
   FC    = ifort
-  OPTSC = -c -assume realloc_lhs -standard-semantics -std08 -O2 -D_R16P_SUPPORTED -module $(DMOD)
+  OPTSC = -c -assume realloc_lhs -standard-semantics -std08 -O2 -module $(DMOD)
   OPTSL = -O2 -module $(DMOD)
 endif
 ifeq "$(COMPILER)" "nag"
@@ -408,6 +408,7 @@ $(DOBJ)stringifor.o: src/lib/stringifor.F90 \
 
 $(DOBJ)stringifor_string_t.o: src/lib/stringifor_string_t.F90 \
 	$(DOBJ)befor64.o \
+	$(DOBJ)face.o \
 	$(DOBJ)penf.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
@@ -420,6 +421,10 @@ $(DOBJ)befor64_pack_data_m.o: src/third_party/BeFoR64/src/lib/befor64_pack_data_
 $(DOBJ)befor64.o: src/third_party/BeFoR64/src/lib/befor64.F90 \
 	$(DOBJ)penf.o \
 	$(DOBJ)befor64_pack_data_m.o
+	@echo $(COTEXT)
+	@$(FC) $(OPTSC)  $< -o $@
+
+$(DOBJ)face.o: src/third_party/FACE/src/lib/face.F90
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
@@ -746,7 +751,11 @@ cleanmod:
 cleanexe:
 	@echo deleting exes
 	@rm -f $(addprefix $(DEXE),$(EXES))
+.PHONY : cleanlib
+cleanlib:
+	@echo deleting built library
+	@rm -f $(DEXE)libstringifor.a
 .PHONY : clean
 clean: cleanobj cleanmod
 .PHONY : cleanall
-cleanall: clean cleanexe
+cleanall: clean cleanexe cleanlib
