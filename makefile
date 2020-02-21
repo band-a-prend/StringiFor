@@ -32,7 +32,6 @@ else
   DOBJ = lib/obj/
   DMOD = lib/mod/
   DEXE = lib/
-  RULE = STRINGIFOR
 endif
 LIBS    =
 VPATH   = $(DSRC) $(DOBJ) $(DMOD)
@@ -40,19 +39,57 @@ MKDIRS  = $(DOBJ) $(DMOD) $(DEXE)
 LCEXES  = $(shell echo $(EXES) | tr '[:upper:]' '[:lower:]')
 EXESPO  = $(addsuffix .o,$(LCEXES))
 EXESOBJ = $(addprefix $(DOBJ),$(EXESPO))
-MAKELIB = ar -rcs $(DEXE)libstringifor.a $(DOBJ)*.o ; ranlib $(DEXE)libstringifor.a
+MAKELIB_STATIC = ar -rcs $(DEXE)libstringifor.a $(DOBJ)*.o ; ranlib $(DEXE)libstringifor.a
 
 #auxiliary variables
 COTEXT = "Compile $(<F)"
 LITEXT = "Assemble $@"
 
-firstrule: $(RULE)
+define MAKE_INFO
+"To build static or shared library make one of targets:"
+echo
+echo " stringifor-static-gnu"
+echo " stringifor-shared-gnu"
+echo " stringifor-static-intel"
+echo " stringifor-shared-intel"
+echo " stringifor-static-nag"
+endef
+
+firstrule:
+	@echo $(MAKE_INFO)
 
 #building rules
 #the library
-STRINGIFOR: $(MKDIRS) $(DOBJ)stringifor.o
+
+stringifor-static-gnu: FC = gfortran
+stringifor-static-gnu: OPTSC = -c -frealloc-lhs -std=f2008 -fall-intrinsics -O2 -J $(DMOD)
+stringifor-static-gnu: $(MKDIRS) $(DOBJ)stringifor.o
 	@echo $(LITEXT)
-	@$(MAKELIB)
+	@$(MAKELIB_STATIC)
+
+stringifor-shared-gnu: FC = gfortran
+stringifor-shared-gnu: OPTSC = -c -fPIC -frealloc-lhs -std=f2008 -fall-intrinsics -O2 -J $(DMOD)
+stringifor-shared-gnu: $(MKDIRS) $(DOBJ)stringifor.o
+	@echo $(LITEXT)
+	@$(FC) -shared -Wl,-soname=libstringifor.so.1 $(DOBJ)*.o -o $(DEXE)libstringifor.so
+
+stringifor-static-intel: FC = ifort
+stringifor-static-intel: OPTSC = -c -assume realloc_lhs -standard-semantics -std08 -O2 -module $(DMOD)
+stringifor-static-intel: $(MKDIRS) $(DOBJ)stringifor.o
+	@echo $(LITEXT)
+	@$(MAKELIB_STATIC)
+
+stringifor-shared-intel: FC = ifort
+stringifor-shared-intel: OPTSC = -c -fPIC -assume realloc_lhs -standard-semantics -std08 -O2 -module $(DMOD)
+stringifor-shared-intel: $(MKDIRS) $(DOBJ)stringifor.o
+	@echo $(LITEXT)
+	ld -shared -Wl,-soname=libstringifor.so.1 $(DOBJ)*.o -lifport -lifcoremt -limf -lm -lirc -lcxa -lunwind -lpthread -lc -o $(DEXE)libstringifor.so
+
+stringifor-static-nag: FC = nag
+stringifor-static-nag: OPTSC = -c -C=array -C=bits -C=calls -C=dangling -C=do -C=intovf -C=present -C=pointer -C=recursion -colour -fpp -f2008 -gline -info -kind=unique -mtrace -nan -O4 -I $(DMOD) -mdir $(DMOD)
+stringifor-static-nag: $(MKDIRS) $(DOBJ)stringifor.o
+	@echo $(LITEXT)
+	@$(MAKELIB_STATIC)
 
 #tests
 .NOTPARALLEL: $(DEXE)STRINGIFOR-DOCTEST-1                   \
@@ -763,53 +800,53 @@ $(DEXE)FACE_TEST_UCS4: $(MKDIRS) $(DOBJ)face_test_ucs4.o
 EXES := $(EXES) FACE_TEST_UCS4
 
 #compiling rules
-$(DOBJ)stringifor.o: src/lib/stringifor.F90 \
+$(DOBJ)stringifor.o: src/lib/stringifor.F90 FORCE \
 	$(DOBJ)penf.o \
 	$(DOBJ)stringifor_string_t.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)stringifor_string_t.o: src/lib/stringifor_string_t.F90 \
+$(DOBJ)stringifor_string_t.o: src/lib/stringifor_string_t.F90 FORCE \
 	$(DOBJ)befor64.o \
 	$(DOBJ)face.o \
 	$(DOBJ)penf.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)befor64_pack_data_m.o: src/third_party/BeFoR64/src/lib/befor64_pack_data_m.F90 \
+$(DOBJ)befor64_pack_data_m.o: src/third_party/BeFoR64/src/lib/befor64_pack_data_m.F90 FORCE \
 	$(DOBJ)penf.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)befor64.o: src/third_party/BeFoR64/src/lib/befor64.F90 \
+$(DOBJ)befor64.o: src/third_party/BeFoR64/src/lib/befor64.F90 FORCE \
 	$(DOBJ)penf.o \
 	$(DOBJ)befor64_pack_data_m.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)face.o: src/third_party/FACE/src/lib/face.F90
+$(DOBJ)face.o: src/third_party/FACE/src/lib/face.F90 FORCE
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)penf.o: src/third_party/PENF/src/lib/penf.F90 \
+$(DOBJ)penf.o: src/third_party/PENF/src/lib/penf.F90 FORCE \
 	$(DOBJ)penf_global_parameters_variables.o \
 	$(DOBJ)penf_b_size.o \
 	$(DOBJ)penf_stringify.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)penf_b_size.o: src/third_party/PENF/src/lib/penf_b_size.F90 \
+$(DOBJ)penf_b_size.o: src/third_party/PENF/src/lib/penf_b_size.F90 FORCE \
 	$(DOBJ)penf_global_parameters_variables.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)penf_stringify.o: src/third_party/PENF/src/lib/penf_stringify.F90 \
+$(DOBJ)penf_stringify.o: src/third_party/PENF/src/lib/penf_stringify.F90 FORCE \
 	$(DOBJ)penf_b_size.o \
 	$(DOBJ)penf_global_parameters_variables.o
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
-$(DOBJ)penf_global_parameters_variables.o: src/third_party/PENF/src/lib/penf_global_parameters_variables.F90
+$(DOBJ)penf_global_parameters_variables.o: src/third_party/PENF/src/lib/penf_global_parameters_variables.F90 FORCE
 	@echo $(COTEXT)
 	@$(FC) $(OPTSC)  $< -o $@
 
@@ -1416,6 +1453,8 @@ $(DOBJ)face_test_ucs4.o: src/third_party/FACE/src/tests/face_test_ucs4.F90 \
 .PHONY : $(MKDIRS)
 $(MKDIRS):
 	@mkdir -p $@
+.PHONY : FORCE
+FORCE:
 .PHONY : cleanobj
 cleanobj:
 	@echo deleting objects
@@ -1430,8 +1469,9 @@ cleanexe:
 	@rm -f $(addprefix $(DEXE),$(EXES))
 .PHONY : cleanlib
 cleanlib:
-	@echo deleting built library
+	@echo deleting built libraries
 	@rm -f $(DEXE)libstringifor.a
+	@rm -f $(DEXE)libstringifor.so
 .PHONY : clean
 clean: cleanobj cleanmod
 .PHONY : cleanall
