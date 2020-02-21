@@ -30,8 +30,7 @@ enddo
 print "(A)", 'A markdown-formatted table'
 print "(A)", ''
 print "(A)", '|'//csv%join(array=cells(:, 1), sep='|')//'|'
-columns = '----' ! re-use columns for printing separators
-print "(A)", '|'//csv%join(array=columns, sep='|')//'|'
+print "(A)", '|'//repeat('----|', size(columns)) ! printing separators
 do r=2, rows_number
   print "(A)", '|'//csv%join(array=cells(:, r), sep='|')//'|'
 enddo

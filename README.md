@@ -223,7 +223,7 @@ enddo
 print "(A)", 'The most expensive car is : '//most_expensive
 ```
 
-See the test program [csv_naive_parser](https://github.com/szaghi/StringiFor/blob/master/src/tests/csv_naive_parser.f90) for a working example.
+See the test program [stringifor_test_csv_naive_parser](https://github.com/szaghi/StringiFor/blob/master/src/tests/stringifor/stringifor_test_csv_naive_parser.f90) for a working example.
 
 Obviously, this is a naive parser without any robustness, but it proves the usefulness of the StringiFor approach.
 
